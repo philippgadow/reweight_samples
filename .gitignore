@@ -1,0 +1,6 @@
+# ignore common binary types
+*.root
+*.pdf
+*.png
+*.h5
+*.json
