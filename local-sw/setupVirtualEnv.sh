@@ -11,4 +11,4 @@ source venv/bin/activate
 
 # install common python packages
 pip install pip argparse grin --upgrade
-pip install numpy pandas matplotlib scipy tables hep_ml sklearn
+pip install numpy pandas matplotlib scipy tables hep_ml sklearn h5py
