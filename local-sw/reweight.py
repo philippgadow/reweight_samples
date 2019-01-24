@@ -54,6 +54,8 @@ def readData(inputFile, clean=True):
     df['dRWW'] = pd.Series(truthdRWW)    
     if clean:
         df = df.dropna()
+    else:
+        df = df.fillna(0.)
     df.drop(columns=['zp_pt'])
 
     return df
@@ -61,9 +63,12 @@ def readData(inputFile, clean=True):
 def run():
     args = getArgs().parse_args()
 
+    ##
+    ## TRAINING + VALIDATION OF BDT
+    ##
+
     original = readData(args.original)
     target = readData(args.target)
-    if args.result: result = readData(args.result, clean=False)
 
     original_weights = np.ones(len(original))
     target_weights = np.ones(len(target))
@@ -92,12 +97,27 @@ def run():
     drawDistributions(original_test, target_test, original_weights_test, columns, join(args.outputdir, 'test_before.png'))
 
     # gradient boosted reweighting
-    reweighter = reweight.GBReweighter(n_estimators=100, learning_rate=0.1, max_depth=3, min_samples_leaf=1000, 
+    reweighter = reweight.GBReweighter(n_estimators=200, learning_rate=0.1, max_depth=4, min_samples_leaf=1000, 
                                        gb_args={'subsample': 0.4})
     reweighter.fit(original_train, target_train)
     gb_weights_test = reweighter.predict_weights(original_test)
     # validate reweighting rule on the test part comparing 1d projections
     drawDistributions(original_test, target_test, gb_weights_test, columns, join(args.outputdir, 'test_bdt.png'))
+
+
+    ##
+    ## REWEIGHTING THE SIMULATED SIGNAL SAMPLE
+    ##
+    if args.result:
+        result = readData(args.result, clean=False)
+        result_weights = np.ones(len(result))
+        print('result', len(result))
+        # reweight result
+        gb_weights_result = reweighter.predict_weights(result)
+
+        # plot result comparing 1d projections
+        drawDistributions(result, target_test, result_weights, columns, join(args.outputdir, 'result_before.png'))
+        drawDistributions(result, target_test, gb_weights_result, columns, join(args.outputdir, 'result_bdt.png'))
 
 
 if __name__ == '__main__':
